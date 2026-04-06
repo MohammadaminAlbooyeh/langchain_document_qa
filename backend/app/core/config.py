@@ -1,8 +1,4 @@
-try:
-    # pydantic v2: BaseSettings moved to pydantic_settings
-    from pydantic import BaseSettings
-except Exception:
-    from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
