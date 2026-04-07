@@ -1,16 +1,17 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 
 
 class HouseBase(BaseModel):
-    title: Optional[str]
-    price: Optional[int]
-    currency: Optional[str]
-    city: Optional[str]
-    neighborhood: Optional[str]
-    area_m2: Optional[float]
-    rooms: Optional[int]
-    url: Optional[str]
+    title: str
+    description: Optional[str]
+    price: float
+    location: str
+    bedrooms: int
+    bathrooms: int
+    area_sqft: float
+    property_type: str
 
 
 class HouseCreate(HouseBase):
@@ -19,6 +20,8 @@ class HouseCreate(HouseBase):
 
 class HouseOut(HouseBase):
     id: int
+    owner_id: int
+    created_at: datetime
 
     class Config:
         from_attributes = True
