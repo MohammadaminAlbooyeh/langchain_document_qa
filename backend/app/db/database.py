@@ -37,13 +37,13 @@ def _add_sample_data():
         db.commit()
         db.refresh(user)
 
-        # Create sample houses
+        # Create sample houses with Italian cities
         houses_data = [
             {
-                "title": "Modern Apartment",
-                "description": "Beautiful modern apartment in the city center",
+                "title": "Modern Apartment in Turin",
+                "description": "Beautiful modern apartment in the city center with excellent metro access",
                 "price": 1200.0,
-                "location": "New York, NY",
+                "location": "Turin",
                 "bedrooms": 2,
                 "bathrooms": 1,
                 "area_sqft": 800.0,
@@ -51,21 +51,32 @@ def _add_sample_data():
                 "owner_id": user.id
             },
             {
-                "title": "Cozy Cottage",
-                "description": "Charming cottage with garden",
-                "price": 900.0,
-                "location": "Austin, TX",
+                "title": "Centro Turin Small Flat",
+                "description": "Small 1-room flat in Centro — ideal for testing rooms=1 and district filtering",
+                "price": 700.0,
+                "location": "Turin",
                 "bedrooms": 1,
                 "bathrooms": 1,
-                "area_sqft": 600.0,
-                "property_type": "cottage",
+                "area_sqft": 450.0,
+                "property_type": "apartment",
                 "owner_id": user.id
             },
             {
-                "title": "Luxury Villa",
-                "description": "Spacious luxury villa with pool",
+                "title": "Cozy Studio in Milan",
+                "description": "Charming studio apartment near Duomo",
+                "price": 950.0,
+                "location": "Milan",
+                "bedrooms": 1,
+                "bathrooms": 1,
+                "area_sqft": 500.0,
+                "property_type": "apartment",
+                "owner_id": user.id
+            },
+            {
+                "title": "Luxury Villa in Florence",
+                "description": "Spacious luxury villa with private garden overlooking the Arno",
                 "price": 5000.0,
-                "location": "Los Angeles, CA",
+                "location": "Florence",
                 "bedrooms": 4,
                 "bathrooms": 3,
                 "area_sqft": 2500.0,
@@ -73,25 +84,69 @@ def _add_sample_data():
                 "owner_id": user.id
             },
             {
-                "title": "City Studio",
-                "description": "Compact studio apartment",
-                "price": 700.0,
-                "location": "San Francisco, CA",
-                "bedrooms": 1,
-                "bathrooms": 1,
-                "area_sqft": 400.0,
+                "title": "Downtown Rome Penthouse",
+                "description": "Elegant penthouse with terrace in the heart of Rome",
+                "price": 2500.0,
+                "location": "Rome",
+                "bedrooms": 3,
+                "bathrooms": 2,
+                "area_sqft": 1400.0,
                 "property_type": "apartment",
                 "owner_id": user.id
             },
             {
-                "title": "Suburban House",
-                "description": "Family house in quiet neighborhood",
+                "title": "Venice Waterfront Apartment",
+                "description": "Stunning apartment with canal views in the historic center",
+                "price": 3200.0,
+                "location": "Venice",
+                "bedrooms": 2,
+                "bathrooms": 2,
+                "area_sqft": 900.0,
+                "property_type": "apartment",
+                "owner_id": user.id
+            },
+            {
+                "title": "Turin Suburban House",
+                "description": "Family house in quiet neighborhood with garden",
                 "price": 1800.0,
-                "location": "Seattle, WA",
+                "location": "Turin",
                 "bedrooms": 3,
                 "bathrooms": 2,
                 "area_sqft": 1800.0,
                 "property_type": "villa",
+                "owner_id": user.id
+            },
+            {
+                "title": "Centro Turin Spacious Flat",
+                "description": "Comfortable 2-bedroom flat located in Centro area, close to amenities",
+                "price": 1400.0,
+                "location": "Turin",
+                "bedrooms": 2,
+                "bathrooms": 1,
+                "area_sqft": 850.0,
+                "property_type": "apartment",
+                "owner_id": user.id
+            },
+            {
+                "title": "Milan Loft",
+                "description": "Industrial-style loft in trendy Navigli district",
+                "price": 1600.0,
+                "location": "Milan",
+                "bedrooms": 2,
+                "bathrooms": 1,
+                "area_sqft": 1100.0,
+                "property_type": "apartment",
+                "owner_id": user.id
+            },
+            {
+                "title": "Bologna Charming Cottage",
+                "description": "Charming cottage near medieval towers",
+                "price": 850.0,
+                "location": "Bologna",
+                "bedrooms": 1,
+                "bathrooms": 1,
+                "area_sqft": 600.0,
+                "property_type": "cottage",
                 "owner_id": user.id
             }
         ]

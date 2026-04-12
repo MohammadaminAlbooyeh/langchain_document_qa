@@ -4,3 +4,7 @@ SQLAlchemy>=2.0
 psycopg2-binary>=2.9
 alembic>=1.10
 python-dotenv>=1.0
+pydantic[email]
+pydantic-settings
+passlib[bcrypt]
+PyJWT

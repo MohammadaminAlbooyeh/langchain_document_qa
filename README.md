@@ -34,6 +34,15 @@ house_finder_bot/
    - Backend: [http://localhost:8000](http://localhost:8000)
    - Frontend: [http://localhost:3000](http://localhost:3000)
 
+### Optional partner API feed
+If you have access to an official or partner listings API, set these environment variables in `.env`:
+```env
+LISTINGS_API_URL=https://example.com/listings
+LISTINGS_API_TOKEN=your-token-if-needed
+LISTINGS_API_TIMEOUT_SECONDS=20
+```
+When configured, the backend will prefer the external feed automatically and keep the UI unchanged.
+
 ### Running Locally
 #### Backend
 1. Navigate to the `backend` folder:
@@ -68,4 +77,5 @@ house_finder_bot/
 
 ## Notes
 - Ensure the `VITE_API_URL` in the `.env` file points to the backend URL.
+- If `LISTINGS_API_URL` is set, `/houses` will proxy and normalize listings from that source before falling back to local seed data.
 - Use `docker-compose logs` to debug any issues.

@@ -1,11 +1,16 @@
 from pydantic_settings import BaseSettings
 import os
+from typing import Optional
 
 
 class Settings(BaseSettings):
     DATABASE_URL: str = f"sqlite:///{os.path.abspath('./data/dev.db')}"
     SECRET_KEY: str = "change-me"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    LISTINGS_API_URL: Optional[str] = None
+    LISTINGS_API_TOKEN: Optional[str] = None
+    LISTINGS_API_TIMEOUT_SECONDS: int = 20
+    LISTINGS_API_SOURCE_NAME: str = "partner-api"
 
     # Add missing attributes for PostgreSQL
     POSTGRES_USER: str = "postgres"
