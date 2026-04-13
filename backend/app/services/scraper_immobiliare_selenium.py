@@ -24,6 +24,11 @@ def scrape_immobiliare(city="milano", page=1, headless=True):
     time.sleep(4)
     html = driver.page_source
     driver.quit()
+
+    lower_html = html.lower()
+    if "datadome" in lower_html or "captcha" in lower_html:
+        raise RuntimeError("immobiliare.it is blocking automated traffic (DataDome/CAPTCHA).")
+
     soup = BeautifulSoup(html, "html.parser")
     results = []
     for card in soup.select(".nd-list__item"):

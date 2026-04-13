@@ -2,11 +2,13 @@ import requests
 from bs4 import BeautifulSoup
 
 def scrape_immobiliare(city="milano", page=1):
+    from app.core.config import settings
     url = f"https://www.immobiliare.it/en/vendita-case/{city}/?pag={page}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
     }
-    resp = requests.get(url, headers=headers, timeout=15)
+    proxies = {"http": settings.PROXY_URL, "https": settings.PROXY_URL} if settings.PROXY_URL else None
+    resp = requests.get(url, headers=headers, timeout=15, proxies=proxies)
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
     results = []

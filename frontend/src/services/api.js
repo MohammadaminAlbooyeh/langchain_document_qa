@@ -14,6 +14,12 @@ export async function fetchHouses({ mode, price, city, district, rooms }) {
 
   const res = await fetch(`${API_BASE}/houses/?${params.toString()}`);
   if (!res.ok) {
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      const payload = await res.json().catch(() => null);
+      const message = payload?.detail || payload?.message || "Failed to fetch houses";
+      throw new Error(message);
+    }
     const detail = await res.text();
     throw new Error(detail || "Failed to fetch houses");
   }

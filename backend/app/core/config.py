@@ -3,6 +3,7 @@ import os
 from typing import Optional
 
 
+
 class Settings(BaseSettings):
     DATABASE_URL: str = f"sqlite:///{os.path.abspath('./data/dev.db')}"
     SECRET_KEY: str = "change-me"
@@ -11,6 +12,15 @@ class Settings(BaseSettings):
     LISTINGS_API_TOKEN: Optional[str] = None
     LISTINGS_API_TIMEOUT_SECONDS: int = 20
     LISTINGS_API_SOURCE_NAME: str = "partner-api"
+
+    # Apify (community/managed scrapers)
+    APIFY_TOKEN: Optional[str] = None
+    APIFY_IMMOBILIARE_ACTOR_ID: Optional[str] = None
+    APIFY_IDEALISTA_ACTOR_ID: Optional[str] = None
+
+    # Proxy and anti-captcha
+    PROXY_URL: Optional[str] = None
+    ANTICAPTCHA_API_KEY: Optional[str] = None
 
     # Add missing attributes for PostgreSQL
     POSTGRES_USER: str = "postgres"

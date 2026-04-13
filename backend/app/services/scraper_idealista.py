@@ -8,7 +8,9 @@ def scrape_idealista(city="torino", page=1):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
     }
-    resp = requests.get(url, headers=headers, timeout=15)
+    from app.core.config import settings
+    proxies = {"http": settings.PROXY_URL, "https": settings.PROXY_URL} if getattr(settings, "PROXY_URL", None) else None
+    resp = requests.get(url, headers=headers, timeout=15, proxies=proxies)
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
     results = []

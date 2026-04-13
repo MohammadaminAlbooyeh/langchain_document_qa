@@ -6,6 +6,17 @@ export default function HouseList({ filters }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const getStatus = () => {
+    if (loading) return { label: "Loading", tone: "loading" };
+    if (error) {
+      if (error.includes("blocked") || error.includes("No live listings available")) {
+        return { label: "Blocked", tone: "blocked" };
+      }
+      return { label: "Offline", tone: "offline" };
+    }
+    return { label: "Live", tone: "live" };
+  };
+
   const formatPrice = (value) =>
     new Intl.NumberFormat("en-IT", {
       maximumFractionDigits: 0,
@@ -29,12 +40,19 @@ export default function HouseList({ filters }) {
     <section className="results-panel" aria-live="polite">
       <div className="results-header">
         <h2>Available Houses</h2>
-        <span className="results-count">{houses.length} result{houses.length === 1 ? "" : "s"}</span>
+        <div className="results-metadata">
+          <span className={`status-pill status-${getStatus().tone}`}>{getStatus().label}</span>
+          <span className="results-count">{houses.length} result{houses.length === 1 ? "" : "s"}</span>
+        </div>
       </div>
       {loading ? (
         <div className="status-message">Loading properties...</div>
       ) : error ? (
-        <div className="status-message error">{error}</div>
+        <div className="status-message error">
+          {error.includes("No live listings available") || error.includes("blocked")
+            ? "Live listings are unavailable right now because the target websites are blocking automated requests."
+            : error}
+        </div>
       ) : (
         <ul className="house-list">
           {houses.length === 0 ? (

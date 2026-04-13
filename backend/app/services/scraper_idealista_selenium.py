@@ -23,6 +23,10 @@ def scrape_idealista(city="torino", page=1, headless=True):
     finally:
         driver.quit()
 
+    lower_html = html.lower()
+    if "datadome" in lower_html or "captcha" in lower_html:
+        raise RuntimeError("idealista.it is blocking automated traffic (DataDome/CAPTCHA).")
+
     soup = BeautifulSoup(html, "html.parser")
     results = []
     cards = soup.select("article, .item, .listing-item")
