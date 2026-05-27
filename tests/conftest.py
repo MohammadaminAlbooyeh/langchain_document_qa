@@ -1,4 +1,15 @@
+import os
 import pytest
+from unittest.mock import AsyncMock
+import asyncio
+
+# Set test environment variables BEFORE importing app modules
+os.environ.setdefault('OPENAI_API_KEY', 'test-key')
+os.environ.setdefault('ANTHROPIC_API_KEY', 'test-key')
+os.environ.setdefault('DATABASE_URL', 'sqlite+aiosqlite:///:memory:')
+os.environ.setdefault('DEBUG', 'True')
+os.environ.setdefault('VECTOR_STORE_TYPE', 'chroma')
+os.environ.setdefault('MAX_UPLOAD_SIZE', '100')
 
 
 @pytest.fixture
@@ -20,3 +31,32 @@ def mock_document():
         "file_size": 1024,
         "status": "processed",
     }
+
+
+@pytest.fixture
+def async_mock():
+    """Provide AsyncMock fixture"""
+    return AsyncMock
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create an instance of the default event loop for the test session."""
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
+    yield loop
+    loop.close()
+
+
+def pytest_configure(config):
+    """Configure pytest"""
+    config.addinivalue_line(
+        "markers", "asyncio: mark test as an asyncio test"
+    )
+    config.addinivalue_line(
+        "markers", "integration: mark test as an integration test"
+    )
+    config.addinivalue_line(
+        "markers", "unit: mark test as a unit test"
+    )
+
