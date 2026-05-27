@@ -1,5 +1,4 @@
 import re
-from langchain.chains import LLMChain
 from langchain_openai import ChatOpenAI
 from backend.langchain_workflows.prompt_templates import entity_extraction_prompt
 from backend.utils.config import get_settings
@@ -15,8 +14,10 @@ _llm = ChatOpenAI(
 
 
 async def extract_entities(text: str) -> dict[str, list[str]]:
-    chain = LLMChain(llm=_llm, prompt=entity_extraction_prompt)
-    result = await chain.arun(text=text)
+    prompt = entity_extraction_prompt.format(text=text)
+    response = await _llm.ainvoke([{"role": "user", "content": prompt}])
+    result = response.content
+    
     entities: dict[str, list[str]] = {}
     for line in result.split("\n"):
         if ":" in line:

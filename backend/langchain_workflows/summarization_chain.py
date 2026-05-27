@@ -1,4 +1,3 @@
-from langchain.chains import LLMChain
 from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from backend.langchain_workflows.prompt_templates import summarization_prompt
@@ -14,24 +13,38 @@ _llm = ChatOpenAI(
 )
 
 
+async def summarize_text(text: str, mode: str = "paragraphs") -> str:
+    if mode == "bullet_points":
+        return await summarize_bullet_points(text)
+    elif mode == "sections":
+        return await summarize_by_sections(text)
+    else:
+        return await summarize_document(text)
+
+
 async def summarize_document(text: str) -> str:
-    chain = LLMChain(llm=_llm, prompt=summarization_prompt)
-    return await chain.arun(text=text)
+    prompt = summarization_prompt.format(text=text)
+    response = await _llm.ainvoke([{"role": "user", "content": prompt}])
+    return response.content
 
 
 async def summarize_bullet_points(text: str) -> str:
+    prompt_text = "Summarize the following text as bullet points:\n\n{text}\n\nBullet points:"
     prompt = PromptTemplate(
-        template="Summarize the following text as bullet points:\n\n{text}\n\nBullet points:",
+        template=prompt_text,
         input_variables=["text"],
     )
-    chain = LLMChain(llm=_llm, prompt=prompt)
-    return await chain.arun(text=text)
+    formatted = prompt.format(text=text)
+    response = await _llm.ainvoke([{"role": "user", "content": formatted}])
+    return response.content
 
 
 async def summarize_by_sections(text: str) -> str:
+    prompt_text = "Split the following text into logical sections and summarize each:\n\n{text}\n\nSection summaries:"
     prompt = PromptTemplate(
-        template="Split the following text into logical sections and summarize each:\n\n{text}\n\nSection summaries:",
+        template=prompt_text,
         input_variables=["text"],
     )
-    chain = LLMChain(llm=_llm, prompt=prompt)
-    return await chain.arun(text=text)
+    formatted = prompt.format(text=text)
+    response = await _llm.ainvoke([{"role": "user", "content": formatted}])
+    return response.content
