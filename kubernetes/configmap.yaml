@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: langchain-qa-config
+data:
+  APP_NAME: "LangChain Document QA"
+  LOG_LEVEL: "INFO"
+  VECTOR_STORE_TYPE: "chroma"
+  DEFAULT_LLM: "openai"

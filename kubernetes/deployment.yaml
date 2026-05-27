@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: langchain-qa-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: langchain-qa-backend
+  template:
+    metadata:
+      labels:
+        app: langchain-qa-backend
+    spec:
+      containers:
+        - name: backend
+          image: langchain-qa-backend:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: langchain-qa-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: langchain-qa-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: langchain-qa-frontend
+  template:
+    metadata:
+      labels:
+        app: langchain-qa-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: langchain-qa-frontend:latest
+          ports:
+            - containerPort: 80

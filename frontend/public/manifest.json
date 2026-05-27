@@ -1,0 +1,9 @@
+{
+  "short_name": "DocQA",
+  "name": "LangChain Document QA",
+  "icons": [],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1a73e8",
+  "background_color": "#ffffff"
+}

@@ -1,0 +1,14 @@
+node_modules/
+__pycache__/
+*.py[cod]
+.env
+.env.local
+*.pkl
+chroma_db/
+data/processed/embeddings/
+data/processed/splits/
+notebooks/.ipynb_checkpoints/
+.DS_Store
+*.log
+dist/
+build/
