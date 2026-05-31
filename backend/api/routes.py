@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, BackgroundTasks, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from backend.api.dependencies import get_db_session
@@ -9,11 +9,9 @@ from backend.api.schemas import (
 )
 from backend.services.document_service import DocumentService
 from backend.services.qa_service import QAService
-from backend.models.document import Document
 from backend.models.conversation import Conversation
 from backend.utils.exceptions import DocumentNotFoundError, UnsupportedFileTypeError, FileSizeExceededError
 from backend.utils.config import get_settings
-import os
 from pathlib import Path
 
 router = APIRouter()
@@ -24,11 +22,14 @@ ALLOWED_TYPES = {"pdf", "docx", "txt"}
 
 
 @router.get("/documents")
-async def list_documents(db: AsyncSession = Depends(get_db_session)):
-    """List all documents with pagination."""
+async def list_documents(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    db: AsyncSession = Depends(get_db_session),
+):
     try:
         service = DocumentService(db)
-        documents = await service.list_documents()
+        documents = await service.list_documents(skip=skip, limit=limit)
         return [
             DocumentResponse(
                 id=doc.id,
@@ -51,36 +52,35 @@ async def upload_document(
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: AsyncSession = Depends(get_db_session),
 ):
-    """Upload a document and initiate processing."""
     try:
         file_type = file.filename.split(".")[-1].lower()
-        
+
         if file_type not in ALLOWED_TYPES:
             raise UnsupportedFileTypeError(file_type)
-        
+
         file_content = await file.read()
         file_size_mb = len(file_content) / (1024 * 1024)
-        
+
         if file_size_mb > settings.max_upload_size:
             raise FileSizeExceededError(settings.max_upload_size)
-        
+
         UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-        
+
         service = DocumentService(db)
         file_path = str(UPLOAD_DIR / file.filename)
-        
+
         with open(file_path, "wb") as f:
             f.write(file_content)
-        
+
         doc = await service.create_document(
             filename=file.filename,
             file_type=file_type,
             file_size=len(file_content),
             file_path=file_path,
         )
-        
+
         background_tasks.add_task(service.process_document, doc.id)
-        
+
         return DocumentUploadResponse(
             id=doc.id,
             filename=doc.filename,
@@ -94,14 +94,13 @@ async def upload_document(
 
 @router.get("/documents/{document_id}", response_model=DocumentResponse)
 async def get_document(document_id: str, db: AsyncSession = Depends(get_db_session)):
-    """Get document details."""
     try:
         service = DocumentService(db)
         doc = await service.get_document(document_id)
-        
+
         if not doc:
             raise DocumentNotFoundError(document_id)
-        
+
         return DocumentResponse(
             id=doc.id,
             filename=doc.filename,
@@ -112,25 +111,24 @@ async def get_document(document_id: str, db: AsyncSession = Depends(get_db_sessi
             updated_at=doc.updated_at,
         )
     except DocumentNotFoundError:
-        raise HTTPException(status_code=404, detail=f"Document not found")
+        raise HTTPException(status_code=404, detail="Document not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/documents/{document_id}")
 async def delete_document(document_id: str, db: AsyncSession = Depends(get_db_session)):
-    """Delete a document."""
     try:
         service = DocumentService(db)
         doc = await service.get_document(document_id)
-        
+
         if not doc:
             raise DocumentNotFoundError(document_id)
-        
+
         await service.delete_document(document_id)
         return {"message": "Document deleted successfully"}
     except DocumentNotFoundError:
-        raise HTTPException(status_code=404, detail=f"Document not found")
+        raise HTTPException(status_code=404, detail="Document not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -141,17 +139,16 @@ async def ask_question(
     request: QuestionRequest,
     db: AsyncSession = Depends(get_db_session),
 ):
-    """Ask a question about a document."""
     try:
         service = DocumentService(db)
         doc = await service.get_document(document_id)
-        
+
         if not doc:
             raise DocumentNotFoundError(document_id)
-        
+
         qa_service = QAService(db)
         result = await qa_service.ask(document_id, request.question, request.conversation_id)
-        
+
         return QAResponse(
             answer=result["answer"],
             sources=result.get("sources", []),
@@ -159,7 +156,7 @@ async def ask_question(
             conversation_id=result["conversation_id"],
         )
     except DocumentNotFoundError:
-        raise HTTPException(status_code=404, detail=f"Document not found")
+        raise HTTPException(status_code=404, detail="Document not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -170,23 +167,22 @@ async def summarize_document(
     request: SummarizeRequest,
     db: AsyncSession = Depends(get_db_session),
 ):
-    """Summarize a document."""
     try:
         service = DocumentService(db)
         doc = await service.get_document(document_id)
-        
+
         if not doc:
             raise DocumentNotFoundError(document_id)
-        
+
         if not doc.text_content:
             raise HTTPException(status_code=400, detail="Document has not been processed yet")
-        
+
         from backend.langchain_workflows.summarization_chain import summarize_text
         summary = await summarize_text(doc.text_content, mode=request.mode)
-        
+
         return SummarizeResponse(summary=summary, mode=request.mode)
     except DocumentNotFoundError:
-        raise HTTPException(status_code=404, detail=f"Document not found")
+        raise HTTPException(status_code=404, detail="Document not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -196,23 +192,22 @@ async def extract_entities_endpoint(
     document_id: str,
     db: AsyncSession = Depends(get_db_session),
 ):
-    """Extract entities from a document."""
     try:
         service = DocumentService(db)
         doc = await service.get_document(document_id)
-        
+
         if not doc:
             raise DocumentNotFoundError(document_id)
-        
+
         if not doc.text_content:
             raise HTTPException(status_code=400, detail="Document has not been processed yet")
-        
+
         from backend.langchain_workflows.entity_extraction import extract_entities
         entities = await extract_entities(doc.text_content)
-        
+
         return EntityExtractionResponse(entities=entities)
     except DocumentNotFoundError:
-        raise HTTPException(status_code=404, detail=f"Document not found")
+        raise HTTPException(status_code=404, detail="Document not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -223,38 +218,36 @@ async def translate_document(
     request: TranslationRequest,
     db: AsyncSession = Depends(get_db_session),
 ):
-    """Translate a document."""
     try:
         service = DocumentService(db)
         doc = await service.get_document(document_id)
-        
+
         if not doc:
             raise DocumentNotFoundError(document_id)
-        
+
         if not doc.text_content:
             raise HTTPException(status_code=400, detail="Document has not been processed yet")
-        
+
         from backend.langchain_workflows.translation_chain import translate
         translated_text = await translate(doc.text_content, request.target_language)
-        
+
         return TranslationResponse(
             translated_text=translated_text,
             source_language="en",
             target_language=request.target_language,
         )
     except DocumentNotFoundError:
-        raise HTTPException(status_code=404, detail=f"Document not found")
+        raise HTTPException(status_code=404, detail="Document not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/conversations")
 async def list_conversations(db: AsyncSession = Depends(get_db_session)):
-    """List all conversations."""
     try:
         result = await db.execute(select(Conversation).order_by(Conversation.created_at.desc()))
         conversations = result.scalars().all()
-        
+
         return [
             {
                 "id": c.id,
@@ -271,19 +264,18 @@ async def list_conversations(db: AsyncSession = Depends(get_db_session)):
 
 @router.get("/conversations/{conversation_id}")
 async def get_conversation(conversation_id: str, db: AsyncSession = Depends(get_db_session)):
-    """Get conversation details with Q&A history."""
     try:
         result = await db.execute(
             select(Conversation).where(Conversation.id == conversation_id)
         )
         conversation = result.scalar_one_or_none()
-        
+
         if not conversation:
             raise HTTPException(status_code=404, detail="Conversation not found")
-        
+
         qa_service = QAService(db)
         history = await qa_service.get_history(conversation_id)
-        
+
         return {
             "id": conversation.id,
             "document_id": conversation.document_id,
@@ -300,16 +292,15 @@ async def get_conversation(conversation_id: str, db: AsyncSession = Depends(get_
 
 @router.delete("/conversations/{conversation_id}")
 async def delete_conversation(conversation_id: str, db: AsyncSession = Depends(get_db_session)):
-    """Delete a conversation."""
     try:
         result = await db.execute(
             select(Conversation).where(Conversation.id == conversation_id)
         )
         conversation = result.scalar_one_or_none()
-        
+
         if not conversation:
             raise HTTPException(status_code=404, detail="Conversation not found")
-        
+
         await db.delete(conversation)
         await db.commit()
         return {"message": "Conversation deleted successfully"}
@@ -325,22 +316,21 @@ async def chat(
     request: QuestionRequest,
     db: AsyncSession = Depends(get_db_session),
 ):
-    """Continue a conversation."""
     try:
         result = await db.execute(
             select(Conversation).where(Conversation.id == conversation_id)
         )
         conversation = result.scalar_one_or_none()
-        
+
         if not conversation:
             raise HTTPException(status_code=404, detail="Conversation not found")
-        
+
         if not conversation.document_id:
             raise HTTPException(status_code=400, detail="Conversation has no associated document")
-        
+
         qa_service = QAService(db)
         result = await qa_service.ask(conversation.document_id, request.question, conversation_id)
-        
+
         return {
             "answer": result["answer"],
             "sources": result.get("sources", []),

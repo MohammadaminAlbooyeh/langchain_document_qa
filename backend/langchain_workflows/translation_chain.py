@@ -1,5 +1,4 @@
 from langchain_openai import ChatOpenAI
-from langchain.prompts import PromptTemplate
 from backend.utils.config import get_settings
 
 settings = get_settings()
@@ -23,7 +22,7 @@ async def translate(text: str, target_language: str, source_language: str | None
         prompt_text = f"Translate the following text from {source_language} to {target_language}:\n\n{text}"
     else:
         prompt_text = f"Translate the following text to {target_language}:\n\n{text}"
-    
+
     response = await _llm.ainvoke([{"role": "user", "content": prompt_text}])
     return response.content
 

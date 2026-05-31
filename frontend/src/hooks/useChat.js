@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import api from '../services/api';
 
 export function useChat(documentId) {
   const [messages, setMessages] = useState([]);
@@ -8,13 +9,10 @@ export function useChat(documentId) {
     setMessages(prev => [...prev, { role: 'user', content: message }]);
     setLoading(true);
     try {
-      const res = await fetch('/api/v1/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ document_id: documentId, message }),
+      const res = await api.post(`/conversations/${documentId}/chat`, {
+        question: message,
       });
-      const data = await res.json();
-      setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: res.data.answer }]);
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Error' }]);
     } finally {

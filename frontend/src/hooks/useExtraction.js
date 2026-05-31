@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import api from '../services/api';
 
 export function useExtraction() {
   const [loading, setLoading] = useState(false);
@@ -7,12 +8,9 @@ export function useExtraction() {
   const extract = async (documentId) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/v1/documents/${documentId}/extract-entities`, {
-        method: 'POST',
-      });
-      const data = await res.json();
-      setEntities(data.entities);
-      return data.entities;
+      const res = await api.post(`/documents/${documentId}/extract-entities`);
+      setEntities(res.data.entities);
+      return res.data.entities;
     } finally {
       setLoading(false);
     }

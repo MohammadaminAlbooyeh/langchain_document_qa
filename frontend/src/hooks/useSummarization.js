@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import api from '../services/api';
 
 export function useSummarization() {
   const [loading, setLoading] = useState(false);
@@ -7,14 +8,9 @@ export function useSummarization() {
   const summarize = async (documentId, mode = 'paragraphs') => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/v1/documents/${documentId}/summarize`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode }),
-      });
-      const data = await res.json();
-      setSummary(data.summary);
-      return data.summary;
+      const res = await api.post(`/documents/${documentId}/summarize`, { mode });
+      setSummary(res.data.summary);
+      return res.data.summary;
     } finally {
       setLoading(false);
     }

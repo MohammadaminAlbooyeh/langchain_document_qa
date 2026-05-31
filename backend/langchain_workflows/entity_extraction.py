@@ -17,7 +17,7 @@ async def extract_entities(text: str) -> dict[str, list[str]]:
     prompt = entity_extraction_prompt.format(text=text)
     response = await _llm.ainvoke([{"role": "user", "content": prompt}])
     result = response.content
-    
+
     entities: dict[str, list[str]] = {}
     for line in result.split("\n"):
         if ":" in line:

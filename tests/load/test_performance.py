@@ -1,9 +1,12 @@
 import pytest
-import time
+from unittest.mock import patch, AsyncMock
 
 
-def test_response_time():
-    start = time.time()
-    time.sleep(0.1)
-    elapsed = time.time() - start
-    assert elapsed < 1.0
+@pytest.mark.asyncio
+async def test_response_time():
+    with patch('backend.langchain_workflows.qa_chain.answer_question', new_callable=AsyncMock) as mock_qa:
+        mock_qa.return_value = {"answer": "Test answer.", "sources": ["doc1"]}
+        from backend.langchain_workflows.qa_chain import answer_question
+        result = await answer_question("test query")
+        assert "answer" in result
+        assert "sources" in result

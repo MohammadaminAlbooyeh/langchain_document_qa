@@ -1,10 +1,10 @@
-from fastapi import Depends, Header, HTTPException
+from fastapi import Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.models.database import get_session
 
 
 async def get_db_session() -> AsyncSession:
-    async with get_session() as session:
+    async for session in get_session():
         yield session
 
 
