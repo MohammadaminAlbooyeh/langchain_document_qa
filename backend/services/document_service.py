@@ -1,6 +1,6 @@
 import uuid
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, UTC
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from backend.models.document import Document, DocumentStatus
@@ -21,8 +21,8 @@ class DocumentService:
             file_size=file_size,
             file_path=file_path,
             status=DocumentStatus.UPLOADED,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         self.db.add(doc)
         await self.db.commit()
@@ -47,7 +47,7 @@ class DocumentService:
         except Exception:
             doc.status = DocumentStatus.FAILED
 
-        doc.updated_at = datetime.utcnow()
+        doc.updated_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(doc)
         return doc
@@ -56,8 +56,10 @@ class DocumentService:
         result = await self.db.execute(select(Document).where(Document.id == document_id))
         return result.scalar_one_or_none()
 
-    async def list_documents(self) -> list[Document]:
-        result = await self.db.execute(select(Document).order_by(Document.created_at.desc()))
+    async def list_documents(self, skip: int = 0, limit: int = 50) -> list[Document]:
+        result = await self.db.execute(
+            select(Document).order_by(Document.created_at.desc()).offset(skip).limit(limit)
+        )
         return list(result.scalars().all())
 
     async def delete_document(self, document_id: str):

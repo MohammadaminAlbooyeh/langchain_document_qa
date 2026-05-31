@@ -26,3 +26,4 @@ models/*.pkl
 chroma_db/
 __pycache__/
 notebooks/.ipynb_checkpoints/
+data/langchain_qa.db

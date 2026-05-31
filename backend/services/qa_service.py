@@ -3,7 +3,7 @@ from backend.langchain_workflows.qa_chain import answer_question
 from backend.models.qa_pair import QAPair
 from backend.models.conversation import Conversation
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 
 
 class QAService:
@@ -18,8 +18,8 @@ class QAService:
                 id=str(uuid.uuid4()),
                 document_id=document_id,
                 title=question[:50],
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
             )
             self.db.add(conversation)
             await self.db.commit()
@@ -32,7 +32,7 @@ class QAService:
             question=question,
             answer=result["answer"],
             sources=",".join(result.get("sources", [])),
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
         )
         self.db.add(qa)
         await self.db.commit()

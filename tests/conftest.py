@@ -3,6 +3,9 @@ import pytest
 from unittest.mock import AsyncMock
 import asyncio
 
+# Configure pytest-asyncio
+pytest_plugins = ('pytest_asyncio',)
+
 # Set test environment variables BEFORE importing app modules
 os.environ.setdefault('OPENAI_API_KEY', 'test-key')
 os.environ.setdefault('ANTHROPIC_API_KEY', 'test-key')
@@ -40,12 +43,10 @@ def async_mock():
 
 
 @pytest.fixture(scope="session")
-def event_loop():
-    """Create an instance of the default event loop for the test session."""
+def event_loop_policy():
+    """Set event loop policy for test session."""
     policy = asyncio.get_event_loop_policy()
-    loop = policy.new_event_loop()
-    yield loop
-    loop.close()
+    return policy
 
 
 def pytest_configure(config):
@@ -59,4 +60,3 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "unit: mark test as a unit test"
     )
-
