@@ -1,4 +1,4 @@
-from langchain.memory import ConversationBufferMemory, ConversationSummaryMemory
+from langchain_classic.memory import ConversationBufferMemory, ConversationSummaryMemory
 from langchain_openai import ChatOpenAI
 from backend.utils.config import get_settings
 

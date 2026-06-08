@@ -1,4 +1,4 @@
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 
 qa_prompt = PromptTemplate(
     template="""You are a helpful assistant that answers questions based on the given context.

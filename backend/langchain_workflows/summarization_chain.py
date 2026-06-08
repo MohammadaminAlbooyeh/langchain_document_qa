@@ -1,5 +1,5 @@
 from langchain_openai import ChatOpenAI
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from backend.langchain_workflows.prompt_templates import summarization_prompt
 from backend.utils.config import get_settings
 

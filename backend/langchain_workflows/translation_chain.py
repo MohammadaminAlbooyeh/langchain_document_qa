@@ -1,5 +1,7 @@
 from langchain_openai import ChatOpenAI
+from langchain_core.prompts import PromptTemplate
 from backend.utils.config import get_settings
+from backend.langchain_workflows.prompt_templates import translation_prompt
 
 settings = get_settings()
 
@@ -10,20 +12,21 @@ _llm = ChatOpenAI(
     openai_api_key=settings.openai_api_key,
 )
 
+_detection_prompt = PromptTemplate(
+    template="Detect the language of the following text. Return only the language name.\n\n{text}",
+    input_variables=["text"],
+)
+
 
 async def detect_language(text: str) -> str:
-    prompt = "Detect the language of the following text. Return only the language name.\n\n" + text
+    prompt = _detection_prompt.format(text=text)
     response = await _llm.ainvoke([{"role": "user", "content": prompt}])
     return response.content.strip()
 
 
 async def translate(text: str, target_language: str, source_language: str | None = None) -> str:
-    if source_language:
-        prompt_text = f"Translate the following text from {source_language} to {target_language}:\n\n{text}"
-    else:
-        prompt_text = f"Translate the following text to {target_language}:\n\n{text}"
-
-    response = await _llm.ainvoke([{"role": "user", "content": prompt_text}])
+    prompt = translation_prompt.format(text=text, target_language=target_language)
+    response = await _llm.ainvoke([{"role": "user", "content": prompt}])
     return response.content
 
 
