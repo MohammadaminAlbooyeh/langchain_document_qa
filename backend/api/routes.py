@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, BackgroundTasks, Query
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, BackgroundTasks, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from backend.api.dependencies import get_db_session
@@ -9,10 +9,15 @@ from backend.api.schemas import (
 )
 from backend.services.document_service import DocumentService
 from backend.services.qa_service import QAService
+from backend.services.audit_service import AuditService
 from backend.models.conversation import Conversation
 from backend.utils.exceptions import DocumentNotFoundError, UnsupportedFileTypeError, FileSizeExceededError
 from backend.utils.config import get_settings
+from backend.utils.sanitizer import InputSanitizer
+from backend.utils.logger import get_logger
 from pathlib import Path
+
+logger = get_logger()
 
 router = APIRouter()
 settings = get_settings()
@@ -51,44 +56,67 @@ async def upload_document(
     file: UploadFile = File(...),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: AsyncSession = Depends(get_db_session),
+    request: Request = None,
 ):
     try:
-        file_type = file.filename.split(".")[-1].lower()
+        # Get user_id from request state (set by AuthMiddleware)
+        user_id = getattr(request.state, "user_id", "anonymous")
+
+        # Sanitize filename
+        safe_filename = InputSanitizer.sanitize_filename(file.filename)
+        file_type = safe_filename.split(".")[-1].lower()
 
         if file_type not in ALLOWED_TYPES:
+            logger.warning(f"Unsupported file type: {file_type}")
             raise UnsupportedFileTypeError(file_type)
 
         file_content = await file.read()
         file_size_mb = len(file_content) / (1024 * 1024)
 
         if file_size_mb > settings.max_upload_size:
+            logger.warning(f"File size exceeded: {file_size_mb}MB")
             raise FileSizeExceededError(settings.max_upload_size)
 
         UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
         service = DocumentService(db)
-        file_path = str(UPLOAD_DIR / file.filename)
+        file_path = str(UPLOAD_DIR / safe_filename)
 
         with open(file_path, "wb") as f:
             f.write(file_content)
 
         doc = await service.create_document(
-            filename=file.filename,
+            filename=safe_filename,
             file_type=file_type,
             file_size=len(file_content),
             file_path=file_path,
         )
 
+        # Audit log
+        audit_service = AuditService(db)
+        await audit_service.log_action(
+            user_id=user_id,
+            action="document_upload",
+            resource_type="document",
+            resource_id=doc.id,
+            details=f"Uploaded file: {safe_filename} ({file_size_mb:.2f}MB)",
+            ip_address=request.client.host if request else None,
+            user_agent=request.headers.get("user-agent") if request else None,
+        )
+
+        logger.info(f"Document uploaded: {doc.id} by user {user_id}")
+
         background_tasks.add_task(service.process_document, doc.id)
 
         return DocumentUploadResponse(
             id=doc.id,
-            filename=doc.filename,
+            filename=safe_filename,
             message="Document uploaded. Processing started.",
         )
     except (UnsupportedFileTypeError, FileSizeExceededError) as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.error(f"Document upload failed: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -136,10 +164,17 @@ async def delete_document(document_id: str, db: AsyncSession = Depends(get_db_se
 @router.post("/documents/{document_id}/qa", response_model=QAResponse)
 async def ask_question(
     document_id: str,
-    request: QuestionRequest,
+    request_body: QuestionRequest,
     db: AsyncSession = Depends(get_db_session),
+    http_request: Request = None,
 ):
     try:
+        # Get user_id from request state
+        user_id = getattr(http_request.state, "user_id", "anonymous") if http_request else "anonymous"
+
+        # Sanitize question
+        sanitized_question = InputSanitizer.sanitize_llm_prompt(request_body.question)
+
         service = DocumentService(db)
         doc = await service.get_document(document_id)
 
@@ -147,7 +182,20 @@ async def ask_question(
             raise DocumentNotFoundError(document_id)
 
         qa_service = QAService(db)
-        result = await qa_service.ask(document_id, request.question, request.conversation_id)
+        result = await qa_service.ask(document_id, sanitized_question, request_body.conversation_id)
+
+        # Audit log
+        audit_service = AuditService(db)
+        await audit_service.log_action(
+            user_id=user_id,
+            action="ask_question",
+            resource_type="document",
+            resource_id=document_id,
+            details=f"Question asked about document",
+            ip_address=http_request.client.host if http_request else None,
+        )
+
+        logger.info(f"Question asked for document {document_id} by user {user_id}")
 
         return QAResponse(
             answer=result["answer"],
@@ -158,6 +206,7 @@ async def ask_question(
     except DocumentNotFoundError:
         raise HTTPException(status_code=404, detail="Document not found")
     except Exception as e:
+        logger.error(f"Q&A failed: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
