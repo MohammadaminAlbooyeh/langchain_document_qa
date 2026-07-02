@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     chunk_size: int = 1000
     chunk_overlap: int = 200
 
+    cors_origins: str = "http://localhost:3000,http://localhost:5173"
+    chroma_db_path: str = "./chroma_db"
+    api_key_prefix: str = "lq-"
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

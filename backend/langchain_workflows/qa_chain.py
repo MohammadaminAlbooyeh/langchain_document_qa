@@ -1,26 +1,11 @@
 from langchain.chains import RetrievalQA
-from langchain_openai import ChatOpenAI
-from langchain_chroma import Chroma
-from langchain_openai import OpenAIEmbeddings
 from backend.langchain_workflows.prompt_templates import qa_prompt
 from backend.utils.config import get_settings
-from backend.utils.singletons import get_llm, get_embeddings, get_vector_store
+from backend.utils.singletons import get_llm, get_vector_store
 from backend.utils.sanitizer import InputSanitizer
 from backend.utils.cache import async_cached
 
 settings = get_settings()
-
-_llm = ChatOpenAI(
-    model=settings.chat_model,
-    temperature=settings.temperature,
-    max_tokens=settings.max_tokens,
-    openai_api_key=settings.openai_api_key,
-)
-
-_embeddings = OpenAIEmbeddings(
-    model=settings.embedding_model,
-    openai_api_key=settings.openai_api_key,
-)
 
 
 def create_qa_chain() -> RetrievalQA:

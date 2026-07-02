@@ -7,16 +7,18 @@ import hashlib
 from datetime import datetime, UTC, timedelta
 from backend.api.dependencies import get_db_session
 from backend.models.api_key import APIKey
+from backend.utils.config import get_settings
 from backend.utils.sanitizer import InputSanitizer
 from backend.utils.logger import get_logger
 
 auth_router = APIRouter()
 logger = get_logger()
+settings = get_settings()
 
 
 def generate_api_key() -> str:
-    """Generate a secure API key with lq- prefix"""
-    return f"lq-{secrets.token_hex(32)}"
+    prefix = settings.api_key_prefix
+    return f"{prefix}{secrets.token_hex(32)}"
 
 
 class LoginRequest(BaseModel):

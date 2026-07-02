@@ -9,8 +9,10 @@ from backend.middleware.timing import TimingMiddleware
 from backend.middleware.auth import AuthMiddleware
 from backend.middleware.rate_limiter import RateLimiterMiddleware
 from backend.models.database import init_db
+from backend.utils.config import get_settings
 from backend.utils.logger import get_logger
 
+settings = get_settings()
 logger = get_logger()
 
 
@@ -32,7 +34,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=settings.cors_origins.split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

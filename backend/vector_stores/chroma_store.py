@@ -15,7 +15,7 @@ class ChromaStore:
         self.store = Chroma(
             collection_name=collection_name,
             embedding_function=embeddings,
-            persist_directory="./chroma_db",
+            persist_directory=settings.chroma_db_path,
         )
 
     async def add_texts(self, texts: list[str], metadatas: list[dict] | None = None) -> list[str]:
