@@ -19,7 +19,7 @@ async def classify_intent(state: AgentState) -> AgentState:
     prompt = f"""Classify the user request into one of: QA, SUMMARIZE, EXTRACT_ENTITIES, TRANSLATE, or UNKNOWN.
 Request: {state['input']}
 Intent:"""
-    response = await _llm.ainvoke(prompt)
+    response = await _llm.ainvoke([{"role": "user", "content": prompt}])
     intent = response.content.strip()
     return {**state, "intent": intent}
 

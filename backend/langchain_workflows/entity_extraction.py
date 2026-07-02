@@ -1,5 +1,6 @@
 import re
 from langchain_openai import ChatOpenAI
+from langchain_core.output_parsers import StrOutputParser
 from backend.langchain_workflows.prompt_templates import entity_extraction_prompt
 from backend.utils.config import get_settings
 
@@ -14,9 +15,9 @@ _llm = ChatOpenAI(
 
 
 async def extract_entities(text: str) -> dict[str, list[str]]:
-    prompt = entity_extraction_prompt.format(text=text)
-    response = await _llm.ainvoke([{"role": "user", "content": prompt}])
-    result = response.content
+    # Use LCEL chain syntax: prompt | llm | output_parser
+    chain = entity_extraction_prompt | _llm | StrOutputParser()
+    result = await chain.ainvoke({"text": text})
 
     entities: dict[str, list[str]] = {}
     for line in result.split("\n"):

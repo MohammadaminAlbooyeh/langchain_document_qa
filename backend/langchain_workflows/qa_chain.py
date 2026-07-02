@@ -1,4 +1,5 @@
-from langchain.chains import RetrievalQA
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 from backend.langchain_workflows.prompt_templates import qa_prompt
 from backend.utils.config import get_settings
 from backend.utils.singletons import get_llm, get_vector_store
@@ -8,17 +9,15 @@ from backend.utils.cache import async_cached
 settings = get_settings()
 
 
-def create_qa_chain() -> RetrievalQA:
-    """Create QA chain using shared singleton instances"""
+def create_qa_chain():
+    """Create QA chain using LCEL syntax with shared singleton instances"""
     llm = get_llm()
     vector_store = get_vector_store()
-    return RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff",
-        retriever=vector_store.as_retriever(search_kwargs={"k": 5}),
-        chain_type_kwargs={"prompt": qa_prompt},
-        return_source_documents=True,
-    )
+    retriever = vector_store.as_retriever(search_kwargs={"k": 5})
+
+    # Create LCEL chain: retriever | prompt | llm | output parser
+    chain = retriever | qa_prompt | llm | StrOutputParser()
+    return chain
 
 
 @async_cached(ttl_seconds=600, key_prefix="retrieve_context")
@@ -59,11 +58,20 @@ async def answer_question(question: str) -> dict:
     # Sanitize input
     question = InputSanitizer.sanitize_llm_prompt(question)
 
+    # Get retriever and chain
+    vector_store = get_vector_store()
+    retriever = vector_store.as_retriever(search_kwargs={"k": 5})
     chain = create_qa_chain()
-    result = await chain.ainvoke({"query": question})
+
+    # Retrieve source documents for metadata
+    source_docs = await retriever.ainvoke(question)
+
+    # Generate answer using the chain
+    answer = await chain.ainvoke({"context": "\n\n".join([doc.page_content for doc in source_docs]), "question": question})
+
     return {
-        "answer": result["result"],
+        "answer": answer,
         "sources": [
-            doc.metadata.get("source", "unknown") for doc in result["source_documents"]
+            doc.metadata.get("source", "unknown") for doc in source_docs
         ],
     }

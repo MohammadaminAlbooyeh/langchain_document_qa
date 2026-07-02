@@ -1,5 +1,6 @@
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 from backend.utils.config import get_settings
 from backend.langchain_workflows.prompt_templates import translation_prompt
 
@@ -12,22 +13,24 @@ _llm = ChatOpenAI(
     openai_api_key=settings.openai_api_key,
 )
 
-_detection_prompt = PromptTemplate(
-    template="Detect the language of the following text. Return only the language name.\n\n{text}",
-    input_variables=["text"],
-)
+_detection_prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a language detection assistant. Return only the language name."),
+    ("user", "Detect the language of the following text. Return only the language name.\n\n{text}"),
+])
 
 
 async def detect_language(text: str) -> str:
-    prompt = _detection_prompt.format(text=text)
-    response = await _llm.ainvoke([{"role": "user", "content": prompt}])
-    return response.content.strip()
+    # Use LCEL chain syntax: prompt | llm | output_parser
+    chain = _detection_prompt | _llm | StrOutputParser()
+    result = await chain.ainvoke({"text": text})
+    return result.strip()
 
 
 async def translate(text: str, target_language: str, source_language: str | None = None) -> str:
-    prompt = translation_prompt.format(text=text, target_language=target_language)
-    response = await _llm.ainvoke([{"role": "user", "content": prompt}])
-    return response.content
+    # Use LCEL chain syntax: prompt | llm | output_parser
+    chain = translation_prompt | _llm | StrOutputParser()
+    result = await chain.ainvoke({"text": text, "target_language": target_language})
+    return result
 
 
 async def translate_document(text: str, target_language: str) -> dict:
